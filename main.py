@@ -3,8 +3,15 @@ from fastapi import FastAPI
 import uvicorn
 from auth.router import router as router_login
 from products.router import router as router_products
+from database import init_models
 
 app = FastAPI()
+
+
+@app.on_event("startup")
+async def startup():
+    await init_models()
+
 
 app.include_router(router_login)
 app.include_router(router_products)
