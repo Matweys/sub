@@ -1,3 +1,4 @@
+# workers/product_events_consumer.py
 import asyncio
 import json
 import os
