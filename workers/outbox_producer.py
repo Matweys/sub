@@ -7,7 +7,7 @@ from datetime import datetime, timezone, timedelta
 from aiokafka import AIOKafkaProducer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
-
+from database.db import engine
 from products.outbox_model import OutboxEvent
 
 # ====== НАСТРОЙКИ ======
@@ -15,18 +15,11 @@ KAFKA_BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP", "localhost:9094")  # на хос�
 BATCH_SIZE = int(os.getenv("OUTBOX_BATCH_SIZE", "50"))
 POLL_INTERVAL = float(os.getenv("OUTBOX_POLL_INTERVAL", "0.5"))
 WORKER_ID = os.getenv("OUTBOX_WORKER_ID", f"worker-{os.getpid()}")
+SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+
 
 def utcnow():
     return datetime.now(timezone.utc)
-
-
-# ====== ВАЖНО: подстрой импорт engine ======
-# У тебя где-то есть engine для SQLAlchemy async.
-# Обычно это database/db.py. Пример: from database.db import engine
-from database.db import engine  # <-- если у тебя другое — поменяй
-
-
-SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 
 async def fetch_and_lock_batch(session):
