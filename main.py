@@ -3,18 +3,14 @@ from fastapi import FastAPI
 import uvicorn
 from auth.router import router as router_login
 from products.router import router as router_products
-from database import init_models
+from core.exceptions import register_exception_handlers
 
 app = FastAPI()
 
-
-@app.on_event("startup")
-async def startup():
-    await init_models()
-
+register_exception_handlers(app)
 
 app.include_router(router_login)
 app.include_router(router_products)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=80, reload=True)

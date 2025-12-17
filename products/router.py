@@ -1,26 +1,22 @@
 # products/router.py
-from fastapi import APIRouter, Body, HTTPException, Depends
-from sqlalchemy import select
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Dict
 
 from auth.utils import get_check_users
-from typing import Dict
-from .schemas import CreateProducts
-from .models import Product
-from database import get_db
+from database.db import get_db
+from products.schemas import CreateProducts
+from products.services import create_product, get_all_products, get_products_by_owner
 
 router = APIRouter(prefix="/products", tags=["Products"])
-
 
 
 @router.get("/my")
 async def my(
     user: Dict = Depends(get_check_users),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
-    stmt = select(Product).where(Product.owner == user["sub"])
-    result = await db.execute(stmt)
-    return result.scalars().all()
+    return await get_products_by_owner(db, user["sub"])
 
 
 @router.post("/create")
@@ -29,20 +25,7 @@ async def create(
     user: Dict = Depends(get_check_users),
     db: AsyncSession = Depends(get_db),
 ):
-    if user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Нет доступа")
-
-    new_item = Product(
-        name=items.name,
-        price=items.price,
-        category=items.category,
-        owner=items.owner,
-    )
-
-    db.add(new_item)
-    await db.commit()
-    await db.refresh(new_item)
-
+    new_item = await create_product(user, items, db)
     return {"status": "success", "product": new_item}
 
 
@@ -51,10 +34,4 @@ async def all_products(
     user: Dict = Depends(get_check_users),
     db: AsyncSession = Depends(get_db),
 ):
-    if user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Нет доступа")
-
-    stmt = select(Product)
-    result = await db.execute(stmt)
-    return result.scalars().all()
-
+    return await get_all_products(user, db)
